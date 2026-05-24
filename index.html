@@ -1,0 +1,54 @@
+import { useEffect, useState } from 'react';
+import { io } from 'socket.io-client';
+
+export const useMultiplayer = (serverUrl) => {
+  const [socket, setSocket] = useState(null);
+  const [players, setPlayers] = useState({});
+  const [blocks, setBlocks] = useState([]);
+
+  useEffect(() => {
+    const newSocket = io(serverUrl);
+    setSocket(newSocket);
+
+    newSocket.on('init', (data) => {
+      setPlayers(data.players);
+      setBlocks(data.blocks);
+    });
+
+    newSocket.on('playerJoin', (player) => {
+      setPlayers((prev) => ({ ...prev, [player.id]: player }));
+    });
+
+    newSocket.on('playerMove', (player) => {
+      setPlayers((prev) => ({ ...prev, [player.id]: player }));
+    });
+
+    newSocket.on('playerUpdate', (player) => {
+      setPlayers((prev) => ({ ...prev, [player.id]: player }));
+    });
+
+    newSocket.on('playerLeave', (id) => {
+      setPlayers((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    });
+
+    newSocket.on('blockAdded', (block) => {
+      setBlocks((prev) => [...prev, block]);
+    });
+
+    newSocket.on('blockRemoved', (position) => {
+      setBlocks((prev) => prev.filter(b => 
+        b.position[0] !== position[0] || 
+        b.position[1] !== position[1] || 
+        b.position[2] !== position[2]
+      ));
+    });
+
+    return () => newSocket.close();
+  }, [serverUrl]);
+
+  return { socket, players, blocks };
+};
